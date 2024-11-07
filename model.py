@@ -9,7 +9,7 @@ class RegDGCNN(nn.Module):
         super().__init__()
         self.k = k
 
-        self.conv1 = DynamicEdgeConv(self.mlp([6, 64, 64]), self.k, aggr="max")
+        self.conv1 = DynamicEdgeConv(self.mlp([12, 64, 64]), self.k, aggr="max")
         self.conv2 = DynamicEdgeConv(self.mlp([64 * 2, 128, 128]), self.k, aggr="max")
         self.conv3 = DynamicEdgeConv(self.mlp([128 * 2, 256, 256]), self.k, aggr="max")
         self.conv4 = DynamicEdgeConv(self.mlp([256 * 2, 512, 512]), self.k, aggr="max")
@@ -33,9 +33,11 @@ class RegDGCNN(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
-        pos, batch = data.pos, data.batch
+        pos, batch, normals = data.pos, data.batch, data.normals
 
-        x1 = self.conv1(pos, batch)
+        x = torch.cat([pos, normals], dim=1)
+
+        x1 = self.conv1(x, batch)
         x1_pool = self.pool(x1, batch)
 
         x2 = self.conv2(x1, batch)

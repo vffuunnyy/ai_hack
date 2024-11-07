@@ -16,13 +16,13 @@ from utils import Settings, read_assets
 
 EPOCHS_COUNT = 100
 settings = Settings(
-    points_range=range(2**10, 2**11 + 1, 2**8),
+    points_range=range(2**10, 2**12 + 1, 2**8),
     z_cut_percent=0.1,
     assets_path="./assets",
     data_file="data.csv",
-    limit=4,
+    limit=None,
 )
-point_clouds, cd_targets = read_assets(settings)
+point_clouds, normals, cd_targets = read_assets(settings)
 
 print(f"Number of models: {len(point_clouds)}")
 
@@ -31,10 +31,11 @@ scaler = StandardScaler()
 cd_targets = scaler.fit_transform(cd_targets).flatten()
 
 data_list = []
-for points, cd in zip(point_clouds, cd_targets):
+for points, cd, norm in zip(point_clouds, cd_targets, normals):
     pos = torch.tensor(points, dtype=torch.float)
+    normals_tensor = torch.tensor(norm, dtype=torch.float)
     y = torch.tensor([cd], dtype=torch.float)
-    data_list.append(Data(pos=pos, y=y))
+    data_list.append(Data(pos=pos, y=y, normals=normals_tensor))
 
 train_val_data, test_data = train_test_split(data_list, test_size=0.15, random_state=42)
 train_data, val_data = train_test_split(train_val_data, test_size=0.15 / 0.85, random_state=42)
@@ -51,7 +52,7 @@ criterion = nn.SmoothL1Loss()
 os.makedirs("./models", exist_ok=True)  # noqa: PTH103
 
 best_val_loss = float("inf")
-patience = 10
+patience = EPOCHS_COUNT // 10
 trigger_times = 0
 
 train_losses = []
