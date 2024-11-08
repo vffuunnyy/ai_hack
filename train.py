@@ -22,7 +22,7 @@ STOP_LOSS_PATIENCE = EPOCHS_COUNT // 10
 settings = Settings(
     points_range=range(2**10, 2**12 + 1, 2**8),
     assets_path="./assets",
-    data_file="test.csv",
+    data_file="data.csv",
     limit=MODELS_COUNT_LIMIT,
 )
 point_clouds, normals, cd_targets = read_assets(settings)
