@@ -1,92 +1,42 @@
+import time
+
 from dataclasses import dataclass, field
 from multiprocessing import Pool, cpu_count
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 
-from sklearn.cluster import MiniBatchKMeans
-from stl.mesh import Mesh
+from stl_reducer import reduce_stl_points
+from torch_geometric.data import Data
 from tqdm import tqdm
 
 
 @dataclass
 class Settings:
-    """Settings for the dataset."""
+    """Настройки для датасета."""
 
-    points_range: range = field(default_factory=lambda: range(1024, 4096, 256))
-    z_cut: float = 0.1
-    z_cut_percent: float = 0.1
+    points_range: range = field(default_factory=lambda: range(1024, 4096 + 1, 256))
     assets_path: str = "./assets"
     data_file: str = "data.csv"
     limit: int | None = None
 
 
-def resample_points_mbkmeans(points: np.array, points_num: int = 2048) -> np.array:
-    """Resamples the points using Mini-Batch K-Means clustering with KMeans++ initialization.
-
-    Optionally applies PCA for dimensionality reduction before clustering.
-
-    Args:
-        points (np.array): Input points.
-        points_num (int, optional): Number of clusters. Defaults to 2048.
-        use_pca (bool, optional): If True, applies PCA before clustering. Defaults to False.
-        n_components (int, optional): Number of PCA components. If None, retains all components.
-
-    Returns:
-        np.array: Resampled points (cluster centers).
-    """
-
-    mbkmeans = MiniBatchKMeans(
-        n_clusters=points_num, init="k-means++", batch_size=512, max_iter=10, random_state=42
-    )
-    mbkmeans.fit(points)
-    return mbkmeans.cluster_centers_
-
-
-def stl_to_point_cloud(filename: str, z_cut: float = 0.1) -> tuple[np.array, np.array]:
-    """Converts an STL file to a point cloud and extracts normals.
-
-    Args:
-        filename (str): Path to the STL file.
-        z_cut (float, optional): Defaults to 0.1.
-
-    Returns:
-        tuple[np.array, np.array]: Point cloud and normals.
-    """
-    mesh_data = Mesh.from_file(filename)
-    points = mesh_data.vectors.reshape(-1, 3)
-    normals = np.repeat(mesh_data.normals, 3, axis=0)
-
-    assert (  # noqa: S101
-        len(points) == len(normals)
-    ), f"Points and normals must match in length, but got {len(points)} points and {len(normals)} normals."
-
-    # Убираем дублирующиеся точки и нормали вместе
-    unique_points, indices = np.unique(points, axis=0, return_index=True)
-    unique_normals = normals[indices]
-
-    # Обрезаем по z_cut
-    min_z, max_z = unique_points[:, 2].min(), unique_points[:, 2].max()
-    z_cut_threshold = min_z + z_cut * (max_z - min_z)
-    mask = unique_points[:, 2] >= z_cut_threshold
-    return unique_points[mask], unique_normals[mask]  # Применяем ту же маску к точкам и нормалям
-
-
 def process_design(
     design_name: str, cd_value: float, settings: Settings
-) -> tuple[list[np.array], list[np.array], list[float]]:
-    """Processes a design to extract point clouds and normals, and associates CD targets.
+) -> tuple[list[np.ndarray], list[np.ndarray], list[float]]:
+    """Обрабатывает дизайн для извлечения облаков точек и нормалей, связывая их со значениями CD.
 
     Args:
-        design_name (str): Design name.
-        cd_value (float): CD target value.
-        settings (Settings): Settings object.
+        design_name (str): Имя дизайна.
+        cd_value (float): Целевое значение CD.
+        settings (Settings): Объект настроек.
 
     Returns:
-        tuple[list[np.array], list[np.array], list[float]]: Point clouds, normals, and CD targets.
+        Tuple[List[np.ndarray], List[np.ndarray], List[float]]: Облака точек, нормали и значения CD.
     """
-    filename = f"{settings.assets_path}/{design_name}.stl"
-    points_base, normals_base = stl_to_point_cloud(filename, settings.z_cut_percent)
+    filename = Path(f"{settings.assets_path}/{design_name}").with_suffix(".stl")
     point_clouds = []
     normals = []
     cd_targets = []
@@ -94,25 +44,24 @@ def process_design(
     for size in tqdm(
         settings.points_range, desc=f"Processing {design_name}", total=len(settings.points_range)
     ):
-        points = resample_points_mbkmeans(points_base, size)
-        resampled_indices = np.random.choice(len(points_base), size, replace=False)  # noqa: NPY002
-        resampled_normals = normals_base[resampled_indices]
-
-        point_clouds.append(points)
-        normals.append(resampled_normals)
+        t = time.perf_counter()
+        points, normals_output = reduce_stl_points(filename, size)
+        print(f"Time: {time.perf_counter() - t:.2f} s")
+        point_clouds.append(np.array(points))
+        normals.append(np.array(normals_output))
         cd_targets.append(cd_value)
 
     return point_clouds, normals, cd_targets
 
 
-def read_assets(settings: Settings) -> tuple[list[np.array], list[np.array], list[float]]:
-    """Reads the assets and extracts point clouds, normals, and CD targets.
+def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[np.ndarray], list[float]]:
+    """Считывает ресурсы и извлекает облака точек, нормали и значения CD.
 
     Args:
-        settings (Settings): Settings object.
+        settings (Settings): Объект настроек.
 
     Returns:
-        tuple[list, list, list]: Point clouds, normals, and CD targets.
+        Tuple[List[np.ndarray], List[np.ndarray], List[float]]: Облака точек, нормали и значения CD.
     """
     data = pd.read_csv(
         f"{settings.assets_path}/{settings.data_file}", usecols=["Design", "Average Cd"]
@@ -136,3 +85,22 @@ def read_assets(settings: Settings) -> tuple[list[np.array], list[np.array], lis
         cd_targets.extend(result[2])
 
     return point_clouds, normals, cd_targets
+
+
+def random_rotate_point_cloud(data: Data) -> Data:
+    """Вращает облако точек случайным образом.
+
+    Args:
+        data (Data): Объект Data с облаком точек.
+
+    Returns: Объект Data с повернутым облаком точек.
+    """
+    theta = np.random.uniform(0, 2 * np.pi)  # noqa: NPY002
+    rotation_matrix = np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta), np.cos(theta), 0],
+        [0, 0, 1],
+    ])
+    data.pos = torch.matmul(data.pos, torch.tensor(rotation_matrix, dtype=torch.float))
+    data.normals = torch.matmul(data.normals, torch.tensor(rotation_matrix, dtype=torch.float))
+    return data
