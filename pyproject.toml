@@ -13,7 +13,7 @@ dependencies = [
     "torch-cluster>=1.6.3",
     "torch-scatter>=2.1.2",
     "tqdm>=4.67.0",
-    "stl-reducer>=0.1.1",
+    "stl-reducer>=0.1.4",
     "scikit-learn>=1.5.2",
 ]
 
