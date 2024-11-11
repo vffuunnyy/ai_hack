@@ -10,24 +10,27 @@ from torch import nn
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-from model import RegDGCNN
-from utils import Settings, random_rotate_point_cloud, read_assets
-
-
-EPOCHS_COUNT = 100
-MODELS_COUNT_LIMIT = None
-BATCH_SIZE = 8
-STOP_LOSS_PATIENCE = EPOCHS_COUNT // 10
-
-settings = Settings(
-    points_range=range(2**10, 2**12 + 1, 2**8),
-    assets_path="./assets",
-    data_file="data.csv",
-    limit=MODELS_COUNT_LIMIT,
+from config import (
+    BATCH_SIZE,
+    BETA,
+    EPOCHS_COUNT,
+    MODELS_PATH,
+    STOP_LOSS_PATIENCE,
+    criterion,
+    device,
+    model,
+    optimizer,
+    scheduler,
+    settings,
 )
+from model import RegDGCNN
+from utils import random_rotate_point_cloud, read_assets
+
+
 point_clouds, normals, cd_targets = read_assets(settings)
 
-print(f"Number of models: {len(point_clouds)}")
+print(f"Number of 3D models: {len(point_clouds)}")
+os.makedirs(MODELS_PATH, exist_ok=True)  # noqa: PTH103
 
 cd_targets = np.array(cd_targets).reshape(-1, 1)
 scaler = StandardScaler()
@@ -47,13 +50,10 @@ train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 test_loader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = RegDGCNN().to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
-criterion = nn.MSELoss()
-
-os.makedirs("./models", exist_ok=True)  # noqa: PTH103
+prior_network = RegDGCNN().to(device)
+prior_network.eval()
+for param in prior_network.parameters():
+    param.requires_grad = False
 
 best_val_loss = float("inf")
 trigger_times = 0
@@ -70,11 +70,20 @@ try:
             data = random_rotate_point_cloud(data)
             data = data.to(device)
             optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, data.y.unsqueeze(1))
-            loss.backward()
+
+            output, embedding = model(data, return_embedding=True)
+            regression_loss = criterion(output, data.y.unsqueeze(1))
+
+            with torch.no_grad():
+                _, prior_embedding = prior_network(data, return_embedding=True)
+
+            rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
+            total_loss = regression_loss + BETA * rnd_loss
+
+            total_loss.backward()
             optimizer.step()
-            total_train_loss += loss.item() * data.num_graphs
+
+            total_train_loss += regression_loss.item() * data.num_graphs
 
         avg_train_loss = total_train_loss / len(train_loader.dataset)
         train_losses.append(avg_train_loss)
@@ -85,9 +94,15 @@ try:
         with torch.no_grad():
             for data in val_loader:
                 data = data.to(device)
-                output = model(data)
-                loss = criterion(output, data.y.unsqueeze(1))
-                total_val_loss += loss.item() * data.num_graphs
+                output, embedding = model(data, return_embedding=True)
+
+                regression_loss = criterion(output, data.y.unsqueeze(1))
+                _, prior_embedding = prior_network(data, return_embedding=True)
+
+                rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
+                total_loss = regression_loss + BETA * rnd_loss
+                total_val_loss += regression_loss.item() * data.num_graphs
+
         avg_val_loss = total_val_loss / len(val_loader.dataset)
         val_losses.append(avg_val_loss)
 
@@ -107,13 +122,14 @@ try:
 except KeyboardInterrupt:
     print("Training interrupted!")
 
-model.load_state_dict(torch.load("./models/best_model.pth"))
+model.load_state_dict(torch.load("./models/best_model.pth", weights_only=True))
 
 try:
     model.eval()
     total_test_loss = 0
     y_true = []
     y_pred = []
+
     with torch.no_grad():
         for data in test_loader:
             data = data.to(device)

@@ -51,7 +51,7 @@ class RegDGCNN(nn.Module):
             layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*layers)
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    def forward(self, data: torch.Tensor, return_embedding: bool = False) -> torch.Tensor:
         pos, batch, normals = data.pos, data.batch, data.normals
         x = torch.cat([pos, normals], dim=1)
 
@@ -71,10 +71,15 @@ class RegDGCNN(nn.Module):
         x4 = self.film4(x4, x4)
         x4_pool = self.pool(x4, batch)
 
-        x = torch.cat([x1_pool, x2_pool, x3_pool, x4_pool], dim=1)
+        embedding = torch.cat([x1_pool, x2_pool, x3_pool, x4_pool], dim=1)
 
-        x = nn.functional.relu(self.bn1(self.lin1(x)))
+        x = nn.functional.relu(self.bn1(self.lin1(embedding)))
         x = self.dropout1(x)
         x = nn.functional.relu(self.bn2(self.lin2(x)))
         x = self.dropout2(x)
-        return self.lin3(x)
+        output = self.lin3(x)
+
+        if return_embedding:
+            return output, embedding
+
+        return output

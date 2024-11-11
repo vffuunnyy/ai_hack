@@ -1,5 +1,3 @@
-import time
-
 from dataclasses import dataclass, field
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
@@ -44,9 +42,7 @@ def process_design(
     for size in tqdm(
         settings.points_range, desc=f"Processing {design_name}", total=len(settings.points_range)
     ):
-        t = time.perf_counter()
         points, normals_output = reduce_stl_points(filename, size)
-        print(f"Time: {time.perf_counter() - t:.2f} s")
         point_clouds.append(np.array(points))
         normals.append(np.array(normals_output))
         cd_targets.append(cd_value)
