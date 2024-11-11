@@ -6,7 +6,8 @@ RUN apt-get update && \
     apt-get install -y git && \
     apt-get clean
 
-RUN git clone https://github.com/vffuunnyy/ai_hack.git /app
+# RUN git clone https://github.com/vffuunnyy/ai_hack.git /app
+COPY . /app
 WORKDIR /app
 
 RUN sh install.sh
