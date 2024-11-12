@@ -27,7 +27,7 @@ from model import RegDGCNN
 from utils import random_rotate_point_cloud, read_assets
 
 
-point_clouds, normals, cd_targets = read_assets(settings)
+point_clouds, cd_targets = read_assets(settings)
 
 print(f"Number of 3D models: {len(point_clouds)}")
 os.makedirs(MODELS_PATH, exist_ok=True)  # noqa: PTH103
@@ -37,11 +37,10 @@ scaler = StandardScaler()
 cd_targets = scaler.fit_transform(cd_targets).flatten()
 
 data_list = []
-for points, cd, norm in zip(point_clouds, cd_targets, normals):
+for points, cd in zip(point_clouds, cd_targets):
     pos = torch.tensor(points, dtype=torch.float)
-    normals_tensor = torch.tensor(norm, dtype=torch.float)
     y = torch.tensor([cd], dtype=torch.float)
-    data_list.append(Data(pos=pos, y=y, normals=normals_tensor))
+    data_list.append(Data(pos=pos, y=y))
 
 train_val_data, test_data = train_test_split(data_list, test_size=0.15, random_state=42)
 train_data, val_data = train_test_split(train_val_data, test_size=0.15 / 0.85, random_state=42)
@@ -57,6 +56,7 @@ for param in prior_network.parameters():
 
 best_val_loss = float("inf")
 trigger_times = 0
+rng = np.random.default_rng()
 
 train_losses = []
 val_losses = []
@@ -67,7 +67,7 @@ try:
         total_train_loss = 0
 
         for data in train_loader:
-            data = random_rotate_point_cloud(data)
+            data = random_rotate_point_cloud(rng, data)
             data = data.to(device)
             optimizer.zero_grad()
 
@@ -101,7 +101,7 @@ try:
 
                 rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
                 total_loss = regression_loss + BETA * rnd_loss
-                total_val_loss += regression_loss.item() * data.num_graphs
+                total_val_loss += total_loss.item() * data.num_graphs
 
         avg_val_loss = total_val_loss / len(val_loader.dataset)
         val_losses.append(avg_val_loss)

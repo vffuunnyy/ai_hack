@@ -10,9 +10,14 @@ class FiLM(nn.Module):
         self.gamma = nn.Linear(conditioning_features, in_features)
         self.beta = nn.Linear(conditioning_features, in_features)
 
+    # def forward(self, x: torch.Tensor, conditioning_input: torch.Tensor) -> torch.Tensor:
+    #     gamma = self.gamma(conditioning_input)
+    #     beta = self.beta(conditioning_input)
+    #     return gamma * x + beta
+
     def forward(self, x: torch.Tensor, conditioning_input: torch.Tensor) -> torch.Tensor:
-        gamma = self.gamma(conditioning_input)
-        beta = self.beta(conditioning_input)
+        gamma = torch.tanh(self.gamma(conditioning_input))
+        beta = torch.tanh(self.beta(conditioning_input))
         return gamma * x + beta
 
 
@@ -21,7 +26,7 @@ class RegDGCNN(nn.Module):
         super().__init__()
         self.k = k
 
-        self.conv1 = DynamicEdgeConv(self.mlp([12, 64, 64]), self.k, aggr="max")
+        self.conv1 = DynamicEdgeConv(self.mlp([6, 64, 64]), self.k, aggr="max")
         self.film1 = FiLM(64, 64)
 
         self.conv2 = DynamicEdgeConv(self.mlp([64 * 2, 128, 128]), self.k, aggr="max")
@@ -47,13 +52,13 @@ class RegDGCNN(nn.Module):
         layers = []
         for i in range(len(channels) - 1):
             layers.append(nn.Linear(channels[i], channels[i + 1]))
-            layers.append(nn.BatchNorm1d(channels[i + 1]))
+            # layers.append(nn.BatchNorm1d(channels[i + 1]))
+            layers.append(nn.LayerNorm(channels[i + 1]))
             layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*layers)
 
     def forward(self, data: torch.Tensor, return_embedding: bool = False) -> torch.Tensor:
-        pos, batch, normals = data.pos, data.batch, data.normals
-        x = torch.cat([pos, normals], dim=1)
+        x, batch = data.pos, data.batch
 
         x1 = self.conv1(x, batch)
         x1 = self.film1(x1, x1)

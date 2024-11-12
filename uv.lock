@@ -6,11 +6,11 @@ name = "ai-hack"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "mesh-reducer" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pyvista" },
     { name = "scikit-learn" },
-    { name = "stl-reducer" },
     { name = "torch" },
     { name = "torch-cluster" },
     { name = "torch-geometric" },
@@ -20,11 +20,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "mesh-reducer", specifier = ">=1.0.0" },
     { name = "numpy", specifier = ">=2.1.3" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pyvista", specifier = ">=0.44.1" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
-    { name = "stl-reducer", specifier = ">=0.1.1" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch-cluster", specifier = ">=1.6.3" },
     { name = "torch-geometric", specifier = ">=2.6.1" },
@@ -435,6 +435,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/47/79/8486d4ddcaaf676314b5fb58e8fe19d1a6210a443a7c31fa72d4215fcb87/matplotlib-3.9.2-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f053c40f94bc51bc03832a41b4f153d83f2062d88c72b5e79997072594e97e51", size = 8221027 },
     { url = "https://files.pythonhosted.org/packages/56/62/72a472181578c3d035dcda0d0fa2e259ba2c4cb91132588a348bb705b70d/matplotlib-3.9.2-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dbe196377a8248972f5cede786d4c5508ed5f5ca4a1e09b44bda889958b33f8c", size = 8329097 },
     { url = "https://files.pythonhosted.org/packages/01/8a/760f7fce66b39f447ad160800619d0bd5d0936d2b4633587116534a4afe0/matplotlib-3.9.2-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:5816b1e1fe8c192cbc013f8f3e3368ac56fbecf02fb41b8f8559303f24c5015e", size = 9093770 },
+]
+
+[[package]]
+name = "mesh-reducer"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/91/22fc2b0c314039066e2aabcfc704a4e0dc0a538be1f173975b4548b7c448/mesh_reducer-1.0.0.tar.gz", hash = "sha256:1400b48c3732d68036298fbb3f9b3975c6e78d6be256fbff2bbc41daddf2636b", size = 58136513 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/ec/fd0a9592e3b0f27346801dccc043fe35f9709fb1df5c199d12c4783de34e/mesh_reducer-1.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:820567eda53c8fb2133705fe65df000d3d082fd4232bd4cc20728a1f14ae5f0b", size = 271008 },
+    { url = "https://files.pythonhosted.org/packages/8d/2c/e49506215914c8cab2606b4eb3258b2a85362c5a090f5e999bc85a9e6c5a/mesh_reducer-1.0.0-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:5a3fb2463d48d5f93086440facf6df32884b328877822a1e36bf6879e0991e0f", size = 313689 },
+    { url = "https://files.pythonhosted.org/packages/3f/bf/cbf79fb9853211d16392874632182ad771322fe787074549bc1de00d0941/mesh_reducer-1.0.0-cp312-none-win_amd64.whl", hash = "sha256:e3a5e55286abe86a36ff0f73beb48eb4ee4a4316af65d2b02daf37027687a381", size = 218580 },
 ]
 
 [[package]]
@@ -953,17 +964,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926", size = 34041 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/5a/e7c31adbe875f2abbb91bd84cf2dc52d792b5a01506781dbcf25c91daf11/six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254", size = 11053 },
-]
-
-[[package]]
-name = "stl-reducer"
-version = "0.1.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/32/1f/2d707d25ca7351a35853b93d8013ca5bf3d17184fc3ff69599a5666ef893/stl_reducer-0.1.4.tar.gz", hash = "sha256:c294ab22a68c6e8e239f104856c1a8f075915d36412efee113f855e7ab7704ca", size = 9372 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/db/f6f44697efe40cc69af8fc7bab811ff6005e8825df51197e5fb0e9ac048d/stl_reducer-0.1.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:9fbace4c7e73ef6430435e08ea9c42f7f039f718e4d7cac66868617588818da1", size = 244552 },
-    { url = "https://files.pythonhosted.org/packages/80/53/c94c97cd6f260557be87a540d74987d046fe410f3ad51ee860275b9b6857/stl_reducer-0.1.4-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:0d45e9ab34f270db7428fcc1332422b4e797def103c41fe1aa4ff3fbd88c47fa", size = 285266 },
-    { url = "https://files.pythonhosted.org/packages/83/1d/fb93db5010f63351b9979dc36353641ca76888523bc94c2a7ccddad5a37e/stl_reducer-0.1.4-cp312-none-win_amd64.whl", hash = "sha256:d7e4aa70b4cff21827f2052ae8c6e7584066a937d7644977fc36a447d5ee3854", size = 190108 },
 ]
 
 [[package]]

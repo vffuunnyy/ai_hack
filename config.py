@@ -10,6 +10,7 @@ from utils import Settings
 
 MODELS_PATH = Path("./models")
 ASSETS_PATH = Path("./assets")
+RESULTS_FILE = "data.csv"
 
 EPOCHS_COUNT = 10_000
 MODELS_COUNT_LIMIT = None
@@ -20,7 +21,7 @@ BETA = 0.05
 settings = Settings(
     points_range=range(1024, 4096 + 1, 256),
     assets_path=ASSETS_PATH,
-    data_file="data.csv",
+    data_file=RESULTS_FILE,
     limit=MODELS_COUNT_LIMIT,
 )
 
