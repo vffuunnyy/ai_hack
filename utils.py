@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -35,20 +34,14 @@ def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[float]]:
     if settings.limit:
         data = data.head(settings.limit)
     cd_values = dict(zip(data["Design"], data["Average Cd"]))
-    search_path = Path(settings.assets_path)
 
     point_clouds = []
     cd_targets = []
 
     for num_points in tqdm(settings.points_range, desc="Processing point ranges"):
-        files = [
-            file
-            for design_name in cd_values
-            for file in search_path.glob(f"{design_name}.*")
-            if file.suffix in {".stl", ".obj"}
-        ]
-
-        points_list = reduce_mesh_points_multi(files, num_points)
+        points_list = reduce_mesh_points_multi(
+            [f"{settings.assets_path}/{file}" for file in cd_values], num_points
+        )
 
         for design_name, points in zip(cd_values.keys(), points_list):
             point_clouds.append(points)
