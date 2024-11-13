@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from mesh_reducer import reduce_mesh_points_multi
+from mesh_reducer import load_meshes
 from torch_geometric.data import Data
 from tqdm import tqdm
 
@@ -39,7 +39,7 @@ def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[float]]:
     cd_targets = []
 
     for num_points in tqdm(settings.points_range, desc="Processing point ranges"):
-        points_list = reduce_mesh_points_multi(
+        points_list = load_meshes(
             [f"{settings.assets_path}/{file}" for file in cd_values], num_points
         )
 
@@ -51,7 +51,7 @@ def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[float]]:
 
 
 def random_rotate_point_cloud(rng: np.random.Generator, data: Data) -> Data:
-    """Randomly rotates the point cloud.
+    """Randomly rotates the point cloud horizontally.
 
     Args:
         data (Data): Data object with point cloud.
@@ -64,5 +64,7 @@ def random_rotate_point_cloud(rng: np.random.Generator, data: Data) -> Data:
         [np.sin(theta), np.cos(theta), 0],
         [0, 0, 1],
     ])
-    data.pos = torch.matmul(data.pos, torch.tensor(rotation_matrix, dtype=torch.float))
+    data.pos[:, [0, 1]] = torch.matmul(
+        data.pos[:, [0, 1]], torch.tensor(rotation_matrix[:2, :2], dtype=torch.float)
+    )
     return data
