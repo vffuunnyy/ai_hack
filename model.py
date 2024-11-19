@@ -52,8 +52,8 @@ class RegDGCNN(nn.Module):
         layers = []
         for i in range(len(channels) - 1):
             layers.append(nn.Linear(channels[i], channels[i + 1]))
-            # layers.append(nn.BatchNorm1d(channels[i + 1]))
-            layers.append(nn.LayerNorm(channels[i + 1]))
+            layers.append(nn.BatchNorm1d(channels[i + 1]))
+            # layers.append(nn.LayerNorm(channels[i + 1]))
             layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*layers)
 

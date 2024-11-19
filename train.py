@@ -11,25 +11,60 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
 from config import (
+    ASSETS_COUNT,
+    ASSETS_PATH,
     BATCH_SIZE,
     BETA,
     EPOCHS_COUNT,
+    LOAD_BEST_MODEL,
     MODELS_PATH,
+    POINTS_RANGE,
+    READ_ASSETS_LIMIT,
+    RESULTS_FILE,
     STOP_LOSS_PATIENCE,
     criterion,
     device,
     model,
     optimizer,
     scheduler,
-    settings,
 )
 from model import RegDGCNN
 from utils import random_rotate_point_cloud, read_assets
 
 
-point_clouds, cd_targets = read_assets(settings)
+print(
+    "Current settings:\n"
+    "\n"
+    "Settings for the model:\n"
+    f"Device: {device}\n"
+    f"Model: {model}\n"
+    f"Optimizer: {optimizer}\n"
+    f"Scheduler: {scheduler}\n"
+    f"Criterion: {criterion}\n"
+    "\n"
+    "Train settings:\n"
+    f"Epochs: {EPOCHS_COUNT}\n"
+    f"Batch Size: {BATCH_SIZE}\n"
+    f"Stop Loss Patience: {STOP_LOSS_PATIENCE}\n"
+    f"Beta: {BETA}\n"
+    f"Best model loading: {LOAD_BEST_MODEL}\n"
+    "\n"
+    "Settings for the dataset:\n"
+    f"Points Range: {POINTS_RANGE}\n"
+    f"Models Count with range: {ASSETS_COUNT}\n"
+    f"Models Count limit: {READ_ASSETS_LIMIT}\n"
+    f"3D Models path: {ASSETS_PATH.as_posix()}\n"
+    f"Train Results file: {RESULTS_FILE.as_posix()}\n"
+    f"Models path: {MODELS_PATH.as_posix()}\n"
+    "\n"
+    "Loading models..."
+)
 
+point_clouds, cd_targets = read_assets()
+
+print("3D Models loaded")
 print(f"Number of 3D models: {len(point_clouds)}")
+
 os.makedirs(MODELS_PATH, exist_ok=True)  # noqa: PTH103
 
 cd_targets = np.array(cd_targets).reshape(-1, 1)
@@ -60,6 +95,8 @@ rng = np.random.default_rng()
 
 train_losses = []
 val_losses = []
+
+print("Strting training...")
 
 try:
     for epoch in range(EPOCHS_COUNT):

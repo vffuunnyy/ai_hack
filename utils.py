@@ -1,5 +1,3 @@
-from dataclasses import dataclass, field
-
 import numpy as np
 import pandas as pd
 import torch
@@ -7,18 +5,10 @@ import torch
 from mesh_reducer import load_meshes_range_points
 from torch_geometric.data import Data
 
-
-@dataclass
-class Settings:
-    """Settings for the dataset."""
-
-    points_range: range = field(default_factory=lambda: range(1024, 4096 + 1, 256))
-    assets_path: str = "./assets"
-    data_file: str = "data.csv"
-    limit: int | None = None
+from config import ASSETS_PATH, POINTS_RANGE, READ_ASSETS_LIMIT, RESULTS_FILE
 
 
-def read_assets(settings: Settings) -> tuple[list[tuple[int, int, int]], list[float]]:
+def read_assets() -> tuple[list[tuple[int, int, int]], list[float]]:
     """Reads assets and extracts point clouds and CD values.
 
     Args:
@@ -28,21 +18,20 @@ def read_assets(settings: Settings) -> tuple[list[tuple[int, int, int]], list[fl
         Tuple[List[np.ndarray], List[float]]: Point clouds and CD values.
     """
     data = pd.read_csv(
-        f"{settings.assets_path}/{settings.data_file}", usecols=["Design", "Average Cd"]
+        RESULTS_FILE.as_posix(),
+        usecols=["Design", "Average Cd"],
     )
-    if settings.limit:
-        data = data.head(settings.limit)
+    if READ_ASSETS_LIMIT:
+        data = data.head(READ_ASSETS_LIMIT)
     cd_values = dict(zip(data["Design"], data["Average Cd"]))
 
-    file_paths = [f"{settings.assets_path}/{file}" for file in cd_values]
+    file_paths = [f"{(ASSETS_PATH / file).as_posix()}" for file in cd_values]
     point_clouds, cd_targets = zip(*[
         (points, cd_values[design_name])
         for design_name, points in zip(
-            cd_values, load_meshes_range_points(file_paths, list(settings.points_range))
+            cd_values, load_meshes_range_points(file_paths, POINTS_RANGE)
         )
     ])
-
-    print(len(point_clouds), len(cd_targets))
 
     return list(point_clouds), list(cd_targets)
 
