@@ -12,9 +12,8 @@ dependencies = [
     "torch-geometric>=2.6.1",
     "torch-cluster>=1.6.3",
     "torch-scatter>=2.1.2",
-    "tqdm>=4.67.0",
     "scikit-learn>=1.5.2",
-    "mesh-reducer>=1.0.1",
+    "mesh-reducer>=1.0.5",
 ]
 
 [tool.ruff]

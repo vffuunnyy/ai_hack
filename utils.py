@@ -4,9 +4,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from mesh_reducer import load_meshes
+from mesh_reducer import load_meshes_range_points
 from torch_geometric.data import Data
-from tqdm import tqdm
 
 
 @dataclass
@@ -19,7 +18,7 @@ class Settings:
     limit: int | None = None
 
 
-def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[float]]:
+def read_assets(settings: Settings) -> tuple[list[tuple[int, int, int]], list[float]]:
     """Reads assets and extracts point clouds and CD values.
 
     Args:
@@ -35,19 +34,17 @@ def read_assets(settings: Settings) -> tuple[list[np.ndarray], list[float]]:
         data = data.head(settings.limit)
     cd_values = dict(zip(data["Design"], data["Average Cd"]))
 
-    point_clouds = []
-    cd_targets = []
-
-    for num_points in tqdm(settings.points_range, desc="Processing point ranges"):
-        points_list = load_meshes(
-            [f"{settings.assets_path}/{file}" for file in cd_values], num_points
+    file_paths = [f"{settings.assets_path}/{file}" for file in cd_values]
+    point_clouds, cd_targets = zip(*[
+        (points, cd_values[design_name])
+        for design_name, points in zip(
+            cd_values, load_meshes_range_points(file_paths, list(settings.points_range))
         )
+    ])
 
-        for design_name, points in zip(cd_values.keys(), points_list):
-            point_clouds.append(points)
-            cd_targets.append(cd_values[design_name])
+    print(len(point_clouds), len(cd_targets))
 
-    return point_clouds, cd_targets
+    return list(point_clouds), list(cd_targets)
 
 
 def random_rotate_point_cloud(rng: np.random.Generator, data: Data) -> Data:
