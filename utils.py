@@ -27,12 +27,9 @@ def read_assets() -> tuple[list[tuple[int, int, int]], list[float]]:
 
     file_paths = [f"{(ASSETS_PATH / file).as_posix()}" for file in cd_values]
     point_clouds, cd_targets = zip(*[
-        (points, cd_values[design_name])
-        for design_name, points in zip(
-            cd_values, load_meshes_range_points(file_paths, POINTS_RANGE)
-        )
+        (mesh.points, cd_values[mesh.name])
+        for mesh in load_meshes_range_points(file_paths, POINTS_RANGE)
     ])
-
     return list(point_clouds), list(cd_targets)
 
 

@@ -1,5 +1,10 @@
 version = 1
 requires-python = ">=3.12"
+resolution-markers = [
+    "platform_system == 'Linux'",
+    "platform_system != 'Darwin' and platform_system != 'Linux'",
+    "platform_system == 'Darwin'",
+]
 
 [[package]]
 name = "ai-hack"
@@ -15,12 +20,11 @@ dependencies = [
     { name = "torch-cluster" },
     { name = "torch-geometric" },
     { name = "torch-scatter" },
-    { name = "tqdm" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "mesh-reducer", specifier = ">=1.0.0" },
+    { name = "mesh-reducer", specifier = ">=2.0.0" },
     { name = "numpy", specifier = ">=2.1.3" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pyvista", specifier = ">=0.44.1" },
@@ -29,7 +33,6 @@ requires-dist = [
     { name = "torch-cluster", specifier = ">=1.6.3" },
     { name = "torch-geometric", specifier = ">=2.6.1" },
     { name = "torch-scatter", specifier = ">=2.1.2" },
-    { name = "tqdm", specifier = ">=4.67.0" },
 ]
 
 [[package]]
@@ -439,13 +442,13 @@ wheels = [
 
 [[package]]
 name = "mesh-reducer"
-version = "1.0.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5c/91/22fc2b0c314039066e2aabcfc704a4e0dc0a538be1f173975b4548b7c448/mesh_reducer-1.0.0.tar.gz", hash = "sha256:1400b48c3732d68036298fbb3f9b3975c6e78d6be256fbff2bbc41daddf2636b", size = 58136513 }
+sdist = { url = "https://files.pythonhosted.org/packages/35/68/0ae58a741dd5f16a6d90491311cdc8c0f7ef87e9dbc1d79173c3d71231f1/mesh_reducer-2.0.0.tar.gz", hash = "sha256:e2b24289aef3d91626275eb37d795951049bf64bf4647113250fcbfdb23b9c36", size = 7086436 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/ec/fd0a9592e3b0f27346801dccc043fe35f9709fb1df5c199d12c4783de34e/mesh_reducer-1.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:820567eda53c8fb2133705fe65df000d3d082fd4232bd4cc20728a1f14ae5f0b", size = 271008 },
-    { url = "https://files.pythonhosted.org/packages/8d/2c/e49506215914c8cab2606b4eb3258b2a85362c5a090f5e999bc85a9e6c5a/mesh_reducer-1.0.0-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:5a3fb2463d48d5f93086440facf6df32884b328877822a1e36bf6879e0991e0f", size = 313689 },
-    { url = "https://files.pythonhosted.org/packages/3f/bf/cbf79fb9853211d16392874632182ad771322fe787074549bc1de00d0941/mesh_reducer-1.0.0-cp312-none-win_amd64.whl", hash = "sha256:e3a5e55286abe86a36ff0f73beb48eb4ee4a4316af65d2b02daf37027687a381", size = 218580 },
+    { url = "https://files.pythonhosted.org/packages/70/f2/f6033eb2d3bda4a9115365b913f8ef216e4fc0816706866c5706ef4c13b0/mesh_reducer-2.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1e992fec681b9768cefa28a9e445be5c216f1b9921ae244a31c7e9fac0126290", size = 573615 },
+    { url = "https://files.pythonhosted.org/packages/8f/02/d6ac67c4b26b5584856f621deb35c1150aa471b69cffac932cbbba2ba758/mesh_reducer-2.0.0-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:10a5dde2b1df489ee40986b94262d3def024c5f9c82b7b85c4e98769d0515377", size = 642661 },
+    { url = "https://files.pythonhosted.org/packages/c8/2f/0587c4aafdece4415a3e70843608db6442ba5c283d108bc1691ac530a4c1/mesh_reducer-2.0.0-cp312-none-win_amd64.whl", hash = "sha256:7ae227eec3645299965344860a41a0413b5729310dcfd44de7fe7b6d74e52104", size = 547357 },
 ]
 
 [[package]]
@@ -584,7 +587,7 @@ name = "nvidia-cudnn-cu12"
 version = "9.1.0.70"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12" },
+    { name = "nvidia-cublas-cu12", marker = "platform_system == 'Linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/fd/713452cd72343f682b1c7b9321e23829f00b842ceaedcda96e742ea0b0b3/nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl", hash = "sha256:165764f44ef8c61fcdfdfdbe769d687e06374059fbb388b6c89ecb0e28793a6f", size = 664752741 },
@@ -595,7 +598,7 @@ name = "nvidia-cufft-cu12"
 version = "11.2.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-nvjitlink-cu12", marker = "platform_system == 'Linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7a/8a/0e728f749baca3fbeffad762738276e5df60851958be7783af121a7221e7/nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_aarch64.whl", hash = "sha256:5dad8008fc7f92f5ddfa2101430917ce2ffacd86824914c82e28990ad7f00399", size = 211422548 },
@@ -616,9 +619,9 @@ name = "nvidia-cusolver-cu12"
 version = "11.6.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cusparse-cu12" },
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-cublas-cu12", marker = "platform_system == 'Linux'" },
+    { name = "nvidia-cusparse-cu12", marker = "platform_system == 'Linux'" },
+    { name = "nvidia-nvjitlink-cu12", marker = "platform_system == 'Linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/6b/a5c33cf16af09166845345275c34ad2190944bcc6026797a39f8e0a282e0/nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_aarch64.whl", hash = "sha256:d338f155f174f90724bbde3758b7ac375a70ce8e706d70b018dd3375545fc84e", size = 127634111 },
@@ -630,7 +633,7 @@ name = "nvidia-cusparse-cu12"
 version = "12.3.1.170"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-nvjitlink-cu12", marker = "platform_system == 'Linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/96/a9/c0d2f83a53d40a4a41be14cea6a0bf9e668ffcf8b004bd65633f433050c0/nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_aarch64.whl", hash = "sha256:9d32f62896231ebe0480efd8a7f702e143c98cfaa0e8a76df3386c1ba2b54df3", size = 207381987 },
@@ -677,7 +680,7 @@ name = "pandas"
 version = "2.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "python_full_version >= '3.12'" },
     { name = "python-dateutil" },
     { name = "pytz" },
     { name = "tzdata" },
@@ -814,8 +817,6 @@ version = "6.1.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/26/10/2a30b13c61e7cf937f4adf90710776b7918ed0a9c434e2c38224732af310/psutil-6.1.0.tar.gz", hash = "sha256:353815f59a7f64cdaca1c0307ee13558a0512f6db064e92fe833784f08539c7a", size = 508565 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/2b/f4dea5d993d9cd22ad958eea828a41d5d225556123d372f02547c29c4f97/psutil-6.1.0-cp27-none-win32.whl", hash = "sha256:9118f27452b70bb1d9ab3198c1f626c2499384935aaf55388211ad982611407e", size = 246648 },
-    { url = "https://files.pythonhosted.org/packages/9f/14/4aa97a7f2e0ac33a050d990ab31686d651ae4ef8c86661fef067f00437b9/psutil-6.1.0-cp27-none-win_amd64.whl", hash = "sha256:a8506f6119cff7015678e2bce904a4da21025cc70ad283a53b099e7620061d85", size = 249905 },
     { url = "https://files.pythonhosted.org/packages/01/9e/8be43078a171381953cfee33c07c0d628594b5dbfc5157847b85022c2c1b/psutil-6.1.0-cp36-abi3-macosx_10_9_x86_64.whl", hash = "sha256:6e2dcd475ce8b80522e51d923d10c7871e45f20918e027ab682f94f1c6351688", size = 247762 },
     { url = "https://files.pythonhosted.org/packages/1d/cb/313e80644ea407f04f6602a9e23096540d9dc1878755f3952ea8d3d104be/psutil-6.1.0-cp36-abi3-macosx_11_0_arm64.whl", hash = "sha256:0895b8414afafc526712c498bd9de2b063deaac4021a3b3c34566283464aff8e", size = 248777 },
     { url = "https://files.pythonhosted.org/packages/65/8e/bcbe2025c587b5d703369b6a75b65d41d1367553da6e3f788aff91eaf5bd/psutil-6.1.0-cp36-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9dcbfce5d89f1d1f2546a2090f4fcf87c7f669d1d90aacb7d7582addece9fb38", size = 284259 },
@@ -1008,9 +1009,9 @@ dependencies = [
     { name = "nvidia-nccl-cu12", marker = "platform_machine == 'x86_64' and platform_system == 'Linux'" },
     { name = "nvidia-nvjitlink-cu12", marker = "platform_machine == 'x86_64' and platform_system == 'Linux'" },
     { name = "nvidia-nvtx-cu12", marker = "platform_machine == 'x86_64' and platform_system == 'Linux'" },
-    { name = "setuptools" },
-    { name = "sympy" },
-    { name = "triton", marker = "python_full_version < '3.13' and platform_machine == 'x86_64' and platform_system == 'Linux'" },
+    { name = "setuptools", marker = "python_full_version >= '3.12'" },
+    { name = "sympy", marker = "python_full_version >= '3.12'" },
+    { name = "triton", marker = "python_full_version < '3.13' and platform_machine == 'x86_64' and platform_system == 'Linux' and python_full_version >= '3.12'" },
     { name = "typing-extensions" },
 ]
 wheels = [
@@ -1072,7 +1073,7 @@ name = "triton"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "filelock" },
+    { name = "filelock", marker = "platform_system == 'Linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/78/eb/65f5ba83c2a123f6498a3097746607e5b2f16add29e36765305e4ac7fdd8/triton-3.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c8182f42fd8080a7d39d666814fa36c5e30cc00ea7eeeb1a2983dbb4c99a0fdc", size = 209551444 },

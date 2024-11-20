@@ -11,7 +11,7 @@ LOAD_BEST_MODEL = False
 
 MODELS_PATH = Path("./models")
 ASSETS_PATH = Path("./assets")
-RESULTS_FILE = ASSETS_PATH / "test.csv"
+RESULTS_FILE = ASSETS_PATH / "data.csv"
 
 POINTS_RANGE = list(range(1024, 4096 + 1, 256))
 READ_ASSETS_LIMIT = None

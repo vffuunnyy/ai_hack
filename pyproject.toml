@@ -13,7 +13,7 @@ dependencies = [
     "torch-cluster>=1.6.3",
     "torch-scatter>=2.1.2",
     "scikit-learn>=1.5.2",
-    "mesh-reducer>=1.0.5",
+    "mesh-reducer>=2.0.0",
 ]
 
 [tool.ruff]
