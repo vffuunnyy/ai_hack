@@ -104,6 +104,8 @@ conda env create -f environment.yml
 
 2. Обучение модели:
 ```bash
+conda activate
+
 python train.py
 ```
 
