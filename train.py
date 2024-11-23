@@ -1,11 +1,12 @@
-import os
-
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns  # For better plot aesthetics
 import torch
 
+from sklearn.metrics import mean_absolute_percentage_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from torch import nn
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
@@ -22,6 +23,7 @@ from config import (
     READ_ASSETS_LIMIT,
     RESULTS_FILE,
     STOP_LOSS_PATIENCE,
+    VISUALIZATION_PATH,
     criterion,
     device,
     model,
@@ -31,6 +33,9 @@ from config import (
 from model import RegDGCNN
 from utils import random_rotate_point_cloud, read_assets
 
+
+# Ensure Seaborn styles are applied
+sns.set(style="whitegrid")
 
 print(
     "Current settings:\n"
@@ -65,11 +70,11 @@ point_clouds, cd_targets = read_assets()
 print("3D Models loaded")
 print(f"Number of 3D models: {len(point_clouds)}")
 
-os.makedirs(MODELS_PATH, exist_ok=True)  # noqa: PTH103
-
 cd_targets = np.array(cd_targets).reshape(-1, 1)
-scaler = StandardScaler()
+scaler = MinMaxScaler()
 cd_targets = scaler.fit_transform(cd_targets).flatten()
+
+joblib.dump(scaler, MODELS_PATH / "scaler.joblib")
 
 data_list = []
 for points, cd in zip(point_clouds, cd_targets):
@@ -95,8 +100,9 @@ rng = np.random.default_rng()
 
 train_losses = []
 val_losses = []
+learning_rates = []
 
-print("Strting training...")
+print("Starting training...")
 
 try:
     for epoch in range(EPOCHS_COUNT):
@@ -109,7 +115,7 @@ try:
             optimizer.zero_grad()
 
             output, embedding = model(data, return_embedding=True)
-            regression_loss = criterion(output, data.y.unsqueeze(1))
+            regression_loss = criterion(output, torch.sigmoid(data.y.unsqueeze(1)))
 
             with torch.no_grad():
                 _, prior_embedding = prior_network(data, return_embedding=True)
@@ -145,21 +151,32 @@ try:
 
         print(f"Epoch {epoch + 1}/{EPOCHS_COUNT}, Validation Loss: {avg_val_loss:.6f}")
 
+        if scheduler:
+            scheduler.step(avg_val_loss)
+            current_lr = scheduler.get_last_lr()[0]
+            learning_rates.append(current_lr)
+        else:
+            learning_rates.append(optimizer.param_groups[0]["lr"])
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             trigger_times = 0
-            torch.save(model.state_dict(), "./models/best_model.pth")
+            torch.save(model.state_dict(), MODELS_PATH / "best_model.pth")
         else:
             trigger_times += 1
             if trigger_times >= STOP_LOSS_PATIENCE:
                 print("Early stopping!")
                 break
 
-        scheduler.step()
 except KeyboardInterrupt:
-    print("Training interrupted!")
+    print("\nTraining interrupted by user!")
 
-model.load_state_dict(torch.load("./models/best_model.pth", weights_only=True))
+finally:
+    print("Proceeding to evaluation and plotting...")
+
+
+model.load_state_dict(torch.load(MODELS_PATH / "best_model.pth", weights_only=True))
+
 
 try:
     model.eval()
@@ -171,6 +188,10 @@ try:
         for data in test_loader:
             data = data.to(device)
             output = model(data)
+
+            print(f"Output Shape: {output.shape}")
+            print(f"Target Shape: {data.y.shape}")
+
             loss = criterion(output, data.y.unsqueeze(1))
             total_test_loss += loss.item() * data.num_graphs
             y_true.extend(data.y.cpu().numpy())
@@ -181,30 +202,85 @@ try:
 
     y_true = scaler.inverse_transform(np.array(y_true).reshape(-1, 1)).flatten()
     y_pred = scaler.inverse_transform(np.array(y_pred).reshape(-1, 1)).flatten()
-    mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+    mape = mean_absolute_percentage_error(y_true, y_pred) * 100
+    r2 = r2_score(y_true, y_pred)
     print(f"Test MAPE: {mape:.2f}%")
+    print(f"Test R² Score: {r2:.4f}")
 
-    plt.figure()
-    plt.scatter(y_true, y_pred)
+    plt.figure(figsize=(8, 8))
+    sns.scatterplot(x=y_true, y=y_pred, alpha=0.6)
     plt.xlabel("True Values")
     plt.ylabel("Predicted Values")
     plt.title("Predictions vs True Values")
-    plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], "r--")
-    plt.grid(True)
-    plt.savefig("./models/predictions.png")
+    plt.plot(
+        [min(y_true), max(y_true)], [min(y_true), max(y_true)], "r--", label="Perfect Prediction"
+    )
+    corr_coef = np.corrcoef(y_true, y_pred)[0, 1]
+    plt.text(
+        0.05,
+        0.95,
+        f"Correlation: {corr_coef:.2f}",
+        transform=plt.gca().transAxes,
+        fontsize=12,
+        verticalalignment="top",
+    )
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(VISUALIZATION_PATH / "predictions_vs_true.png")
     plt.show()
+
+    residuals = y_true - y_pred
+    plt.figure(figsize=(8, 6))
+    sns.histplot(residuals, bins=50, kde=True)
+    plt.xlabel("Residuals")
+    plt.title("Histogram of Residuals")
+    plt.tight_layout()
+    plt.savefig(VISUALIZATION_PATH / "residuals_histogram.png")
+    plt.show()
+
+    plt.figure(figsize=(8, 6))
+    sns.scatterplot(x=y_pred, y=residuals, alpha=0.6)
+    plt.axhline(0, color="r", linestyle="--")
+    plt.xlabel("Predicted Values")
+    plt.ylabel("Residuals")
+    plt.title("Residuals vs Predicted Values")
+    plt.tight_layout()
+    plt.savefig(VISUALIZATION_PATH / "residuals_vs_predicted.png")
+    plt.show()
+
+    errors = np.abs(y_true - y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.histplot(errors, bins=50, kde=True, color="orange")
+    plt.xlabel("Absolute Error")
+    plt.title("Histogram of Absolute Errors")
+    plt.tight_layout()
+    plt.savefig(VISUALIZATION_PATH / "absolute_errors_histogram.png")
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    epochs_range = range(1, len(train_losses) + 1)
+    plt.plot(epochs_range, train_losses, label="Training Loss", marker="o")
+    plt.plot(epochs_range, val_losses, label="Validation Loss", marker="o")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training and Validation Loss Over Epochs")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(VISUALIZATION_PATH / "training_validation_loss.png")
+    plt.show()
+
+    if scheduler and len(learning_rates) > 1:
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs_range, learning_rates, label="Learning Rate", marker="x", color="green")
+        plt.xlabel("Epoch")
+        plt.ylabel("Learning Rate")
+        plt.title("Learning Rate Schedule")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(VISUALIZATION_PATH / "learning_rate_schedule.png")
+        plt.show()
+
 except KeyboardInterrupt:
     print("Evaluation interrupted!")
-
-plt.figure()
-plt.plot(range(1, len(train_losses) + 1), train_losses, label="Training Loss")
-plt.plot(range(1, len(val_losses) + 1), val_losses, label="Validation Loss")
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.title("Training and Validation Loss")
-plt.legend()
-plt.grid(True)
-plt.savefig("./models/loss_plot.png")
-plt.show()
-
-torch.save(model.state_dict(), "./models/final_model.pth")
