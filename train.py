@@ -50,7 +50,7 @@ if args.no_seaborn:
 if USE_SEABORN:
     import seaborn as sns
 
-    sns.set_theme("whitegrid")
+    sns.set_theme("notebook", "whitegrid")
 else:
     sns = None
 
