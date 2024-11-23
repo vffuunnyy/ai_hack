@@ -1,3 +1,5 @@
+import argparse
+
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,7 +36,23 @@ from model import RegDGCNN
 from utils import read_assets
 
 
-sns.set_theme("whitegrid")
+parser = argparse.ArgumentParser(description="Train RegDGCNN Model")
+parser.add_argument(
+    "--no-seaborn",
+    action="store_true",
+    help="Disable Seaborn for plotting and do not display plots.",
+)
+args = parser.parse_args()
+
+if args.no_seaborn:
+    USE_SEABORN = False
+
+if USE_SEABORN:
+    import seaborn as sns
+
+    sns.set_theme("whitegrid")
+else:
+    sns = None
 
 print(
     "Current settings:\n"
@@ -204,80 +222,89 @@ try:
     print(f"Test MAPE: {mape:.2f}%")
     print(f"Test R² Score: {r2:.4f}")
 
-    plt.figure(figsize=(8, 8))
-    sns.scatterplot(x=y_true, y=y_pred, alpha=0.6)
-    plt.xlabel("True Values")
-    plt.ylabel("Predicted Values")
-    plt.title("Predictions vs True Values")
-    plt.plot(
+    def plot_and_save(fig, filename):
+        fig.tight_layout()
+        fig.savefig(VISUALIZATION_PATH / filename)
+        if USE_SEABORN:
+            plt.show()
+        plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    if USE_SEABORN:
+        sns.scatterplot(x=y_true, y=y_pred, alpha=0.6, ax=ax)
+    else:
+        ax.scatter(y_true, y_pred, alpha=0.6)
+    ax.set_xlabel("True Values")
+    ax.set_ylabel("Predicted Values")
+    ax.set_title("Predictions vs True Values")
+    ax.plot(
         [min(y_true), max(y_true)], [min(y_true), max(y_true)], "r--", label="Perfect Prediction"
     )
     corr_coef = np.corrcoef(y_true, y_pred)[0, 1]
-    plt.text(
+    ax.text(
         0.05,
         0.95,
         f"Correlation: {corr_coef:.2f}",
-        transform=plt.gca().transAxes,
+        transform=ax.transAxes,
         fontsize=12,
         verticalalignment="top",
     )
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(VISUALIZATION_PATH / "predictions_vs_true.png")
-    plt.show()
+    ax.legend()
+    plot_and_save(fig, "predictions_vs_true.png")
 
     residuals = y_true - y_pred
-    plt.figure(figsize=(8, 6))
-    sns.histplot(residuals, bins=50, kde=True)
-    plt.xlabel("Residuals")
-    plt.title("Histogram of Residuals")
-    plt.tight_layout()
-    plt.savefig(VISUALIZATION_PATH / "residuals_histogram.png")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    if USE_SEABORN:
+        sns.histplot(residuals, bins=50, kde=True, ax=ax)
+    else:
+        ax.hist(residuals, bins=50, density=True, alpha=0.6, color="g")
+        ax.set_ylabel("Density")
+    ax.set_xlabel("Residuals")
+    ax.set_title("Histogram of Residuals")
+    plot_and_save(fig, "residuals_histogram.png")
 
-    plt.figure(figsize=(8, 6))
-    sns.scatterplot(x=y_pred, y=residuals, alpha=0.6)
-    plt.axhline(0, color="r", linestyle="--")
-    plt.xlabel("Predicted Values")
-    plt.ylabel("Residuals")
-    plt.title("Residuals vs Predicted Values")
-    plt.tight_layout()
-    plt.savefig(VISUALIZATION_PATH / "residuals_vs_predicted.png")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    if USE_SEABORN:
+        sns.scatterplot(x=y_pred, y=residuals, alpha=0.6, ax=ax)
+    else:
+        ax.scatter(y_pred, residuals, alpha=0.6)
+    ax.axhline(0, color="r", linestyle="--")
+    ax.set_xlabel("Predicted Values")
+    ax.set_ylabel("Residuals")
+    ax.set_title("Residuals vs Predicted Values")
+    plot_and_save(fig, "residuals_vs_predicted.png")
 
     errors = np.abs(y_true - y_pred)
-    plt.figure(figsize=(8, 6))
-    sns.histplot(errors, bins=50, kde=True, color="orange")
-    plt.xlabel("Absolute Error")
-    plt.title("Histogram of Absolute Errors")
-    plt.tight_layout()
-    plt.savefig(VISUALIZATION_PATH / "absolute_errors_histogram.png")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    if USE_SEABORN:
+        sns.histplot(errors, bins=50, kde=True, color="orange", ax=ax)
+    else:
+        ax.hist(errors, bins=50, density=True, alpha=0.6, color="orange")
+        ax.set_ylabel("Density")
+    ax.set_xlabel("Absolute Error")
+    ax.set_title("Histogram of Absolute Errors")
+    plot_and_save(fig, "absolute_errors_histogram.png")
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     epochs_range = range(1, len(train_losses) + 1)
-    plt.plot(epochs_range, train_losses, label="Training Loss", marker="o")
-    plt.plot(epochs_range, val_losses, label="Validation Loss", marker="o")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.title("Training and Validation Loss Over Epochs")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(VISUALIZATION_PATH / "training_validation_loss.png")
-    plt.show()
+    ax.plot(epochs_range, train_losses, label="Training Loss", marker="o")
+    ax.plot(epochs_range, val_losses, label="Validation Loss", marker="o")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.set_title("Training and Validation Loss Over Epochs")
+    ax.legend()
+    ax.grid(True)
+    plot_and_save(fig, "training_validation_loss.png")
 
     if scheduler and len(learning_rates) > 1:
-        plt.figure(figsize=(10, 6))
-        plt.plot(epochs_range, learning_rates, label="Learning Rate", marker="x", color="green")
-        plt.xlabel("Epoch")
-        plt.ylabel("Learning Rate")
-        plt.title("Learning Rate Schedule")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(VISUALIZATION_PATH / "learning_rate_schedule.png")
-        plt.show()
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(epochs_range, learning_rates, label="Learning Rate", marker="x", color="green")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Learning Rate")
+        ax.set_title("Learning Rate Schedule")
+        ax.legend()
+        ax.grid(True)
+        plot_and_save(fig, "learning_rate_schedule.png")
 
 except KeyboardInterrupt:
     print("Evaluation interrupted!")

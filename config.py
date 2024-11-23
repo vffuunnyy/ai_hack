@@ -8,6 +8,7 @@ from model import RegDGCNN
 
 
 LOAD_BEST_MODEL = False
+USE_SEABORN = True
 
 MODELS_PATH = Path("./models")
 ASSETS_PATH = Path("./assets")
