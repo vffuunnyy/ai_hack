@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from stl import mesh
 
@@ -9,6 +10,15 @@ source_dir = Path("input")
 output_dir = Path("data")
 output_dir.mkdir(parents=True, exist_ok=True)
 
+csv_path = Path("data.csv")
+output_csv_path = output_dir / "output.csv"
+
+data = pd.read_csv(csv_path)
+
+data['Design'] = data['Design'] + ".stl"
+
+data[['Design', 'Average Cd']].to_csv(output_csv_path, index=False)
+print(f"Новый файл CSV сохранён: {output_csv_path}")
 
 def combine_stl_files(folder: Path, output_path: Path) -> None:
     stl_files = list(folder.glob("*.stl"))
@@ -26,7 +36,6 @@ def combine_stl_files(folder: Path, output_path: Path) -> None:
 
     combined_mesh.save(output_path)
     print(f"Объединённый файл сохранён: {output_path}")
-
 
 for folder in source_dir.iterdir():
     if folder.is_dir():
