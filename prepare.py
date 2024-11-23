@@ -7,11 +7,11 @@ from stl import mesh
 
 
 source_dir = Path("input")
-output_dir = Path("data")
+output_dir = Path("assets")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 csv_path = Path("data.csv")
-output_csv_path = output_dir / "output.csv"
+output_csv_path = output_dir / "data.csv"
 
 data = pd.read_csv(csv_path)
 

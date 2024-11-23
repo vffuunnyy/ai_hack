@@ -31,11 +31,10 @@ from config import (
     scheduler,
 )
 from model import RegDGCNN
-from utils import random_rotate_point_cloud, read_assets
+from utils import read_assets
 
 
-# Ensure Seaborn styles are applied
-sns.set(style="whitegrid")
+sns.set_theme("whitegrid")
 
 print(
     "Current settings:\n"
@@ -96,7 +95,6 @@ for param in prior_network.parameters():
 
 best_val_loss = float("inf")
 trigger_times = 0
-rng = np.random.default_rng()
 
 train_losses = []
 val_losses = []
@@ -110,7 +108,6 @@ try:
         total_train_loss = 0
 
         for data in train_loader:
-            data = random_rotate_point_cloud(rng, data)
             data = data.to(device)
             optimizer.zero_grad()
 
