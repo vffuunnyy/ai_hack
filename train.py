@@ -25,6 +25,7 @@ from config import (
     READ_ASSETS_LIMIT,
     RESULTS_FILE,
     STOP_LOSS_PATIENCE,
+    USE_SEABORN,
     VISUALIZATION_PATH,
     criterion,
     device,
