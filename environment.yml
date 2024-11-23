@@ -1,0 +1,21 @@
+name: ai-hack
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - https://repo.anaconda.com/pkgs/msys2
+dependencies:
+  - python=3.12
+  - setuptools
+  - pip
+  - wheel
+  - anaconda-anon-usage
+  - pytorch
+  - torchvision
+  - numpy
+  - pandas
+  - scikit-learn
+  - pip:
+      - torch-geometric>=2.6.1
+      - torch-cluster>=1.6.3
+      - torch-scatter>=2.1.2
+      - mesh-reducer>=2.0.0
