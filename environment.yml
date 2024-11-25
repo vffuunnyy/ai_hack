@@ -15,6 +15,7 @@ dependencies:
   - pandas
   - scikit-learn
   - seaborn
+  - tensorboard
   - pip:
       - torch-geometric>=2.6.1
       - torch-cluster>=1.6.3
