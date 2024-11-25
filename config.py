@@ -13,10 +13,12 @@ USE_SEABORN = True
 MODELS_PATH = Path("./models")
 ASSETS_PATH = Path("./assets")
 VISUALIZATION_PATH = Path("./visualization")
+LOGS_PATH = Path("./logs")
 RESULTS_FILE = ASSETS_PATH / "data.csv"
 
 MODELS_PATH.mkdir(parents=True, exist_ok=True)
 VISUALIZATION_PATH.mkdir(parents=True, exist_ok=True)
+LOGS_PATH.mkdir(parents=True, exist_ok=True)
 
 POINTS_RANGE = list(range(512, 2048 + 1, 768))
 READ_ASSETS_LIMIT = None

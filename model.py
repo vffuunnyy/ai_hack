@@ -1,7 +1,13 @@
 import torch
 
 from torch import nn
-from torch_geometric.nn import DynamicEdgeConv, GATConv, global_max_pool, global_mean_pool
+from torch_geometric.nn import (
+    DynamicEdgeConv,
+    GATConv,
+    global_max_pool,
+    global_mean_pool,
+    knn_graph,
+)
 
 
 class FiLM(nn.Module):
@@ -58,12 +64,14 @@ class RegDGCNN(nn.Module):
         return nn.Sequential(*layers)
 
     def compute_edge_index(self, x: torch.Tensor, batch: torch.Tensor, k: int) -> torch.Tensor:
-        from torch_geometric.nn import knn_graph
-
+        if batch is None:
+            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
         return knn_graph(x, k=k, batch=batch)
 
     def forward(self, data: torch.Tensor, return_embedding: bool = False) -> torch.Tensor:
         x, batch = data.pos, data.batch
+        if batch is None:
+            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
 
         # Layer 1
         x1 = self.conv1(x, batch)

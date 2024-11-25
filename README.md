@@ -97,7 +97,7 @@
 
 3. **Оценка модели:**
     - Предсказание коэффициента сопротивления на тестовой выборке.
-    - Оценка качества модели с использованием метрик `MSE`, `MAE`, `R2`.
+    - Оценка качества модели с использованием метрик `MSE`, `MAPE`, `R²`.
     - Визуализация результатов обучения.
     - Сохранение результатов в файлы.
 
@@ -119,14 +119,25 @@ python train.py
 3. После обучения модели, можно использовать ее для предсказания коэффициента сопротивления:
 ```python
 from models import RegDGCNN
+from torch_geometric.data import Data
+from mesh_reducer import load_mesh
+
 import torch
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = RegDGCNN()
 model.load_state_dict(torch.load("./models/best_model.pth", weights_only=True))
-model.eval()
 
-# Предсказание коэффициента сопротивления
-cd_pred = model(data)
+points = load_mesh("assets/3d_model.stl", points=2048)
+pos = torch.tensor(points, dtype=torch.float)
+data = Data(pos=pos, y=y)
+
+model.eval()
+with torch.no_grad():
+    output = model(data.to(device))
+
+print(f"Предсказанное значение: {output.item()}")
 ```
 # FAQ
 
@@ -162,4 +173,12 @@ cd_pred = model(data)
 > Для изменения скорости обучения, установите параметр `lr` в оптимизаторе:
 ```python
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+```
+
+## Как посмотреть логи обучения и визуализацию модели?
+
+> Логи обучения сохраняются в папке `logs` в формате `tensorboard`.
+> Чтобы запустить tensorboard, выполните следующую команду:
+```shell
+tensorboard --logdir ./logs/
 ```

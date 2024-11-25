@@ -10,6 +10,7 @@ from sklearn.metrics import mean_absolute_percentage_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from torch import nn
+from torch.utils.tensorboard import SummaryWriter
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
@@ -20,6 +21,7 @@ from config import (
     BETA,
     EPOCHS_COUNT,
     LOAD_BEST_MODEL,
+    LOGS_PATH,
     MODELS_PATH,
     POINTS_RANGE,
     READ_ASSETS_LIMIT,
@@ -119,6 +121,24 @@ train_losses = []
 val_losses = []
 learning_rates = []
 
+writer = SummaryWriter(log_dir=LOGS_PATH)
+
+writer.add_text("Settings/Beta", str(BETA))
+writer.add_text("Settings/Epochs", str(EPOCHS_COUNT))
+writer.add_text("Settings/Batch Size", str(BATCH_SIZE))
+writer.add_text("Settings/Stop Loss Patience", str(STOP_LOSS_PATIENCE))
+writer.add_text("Settings/Assets Count", str(ASSETS_COUNT))
+writer.add_text("Settings/Models Count Limit", str(READ_ASSETS_LIMIT))
+writer.add_text("Settings/Points Range Min", str(min(POINTS_RANGE)))
+writer.add_text("Settings/Points Range Max", str(max(POINTS_RANGE)))
+writer.add_text("Settings/Models Path", ASSETS_PATH.as_posix())
+writer.add_text("Settings/Results File", RESULTS_FILE.as_posix())
+writer.add_text("Settings/Models Path", MODELS_PATH.as_posix())
+
+writer.add_scalar("Loss/train", 0, 0)
+writer.add_scalar("Loss/validation", 0, 0)
+
+
 print("Starting training...")
 
 try:
@@ -156,6 +176,7 @@ try:
         avg_train_loss = total_train_loss / len(train_loader.dataset)
         train_losses.append(avg_train_loss)
         print(f"Epoch {epoch + 1}/{EPOCHS_COUNT}, Training Loss: {avg_train_loss:.6f}")
+        writer.add_scalar("Loss/train", avg_train_loss, epoch)
 
         model.eval()
         total_val_loss = 0
@@ -184,6 +205,7 @@ try:
         val_losses.append(avg_val_loss)
 
         print(f"Epoch {epoch + 1}/{EPOCHS_COUNT}, Validation Loss: {avg_val_loss:.6f}")
+        writer.add_scalar("Loss/validation", avg_val_loss, epoch)
 
         if scheduler:
             scheduler.step(avg_val_loss)
@@ -209,6 +231,15 @@ finally:
     print("Proceeding to evaluation and plotting...")
 
 
+# for data in val_loader:
+#     writer.add_graph(model, data.to(device))
+
+for name, param in model.named_parameters():
+    writer.add_histogram(f"{name}", param, epoch)
+    if param.grad is not None:
+        writer.add_histogram(f"{name}.grad", param.grad, epoch)
+
+writer.close()
 model.load_state_dict(torch.load(MODELS_PATH / "best_model.pth", weights_only=True))
 
 train_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # noqa: DTZ005
