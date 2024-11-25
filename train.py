@@ -1,4 +1,5 @@
 import argparse
+import datetime
 
 import joblib
 import matplotlib.pyplot as plt
@@ -126,22 +127,31 @@ try:
         total_train_loss = 0
 
         for data in train_loader:
-            data = data.to(device)
-            optimizer.zero_grad()
+            try:
+                data = data.to(device)
+                optimizer.zero_grad()
 
-            output, embedding = model(data, return_embedding=True)
-            regression_loss = criterion(output, torch.sigmoid(data.y.unsqueeze(1)))
+                output, embedding = model(data, return_embedding=True)
+                regression_loss = criterion(output, torch.sigmoid(data.y.unsqueeze(1)))
 
-            with torch.no_grad():
-                _, prior_embedding = prior_network(data, return_embedding=True)
+                with torch.no_grad():
+                    _, prior_embedding = prior_network(data, return_embedding=True)
 
-            rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
-            total_loss = regression_loss + BETA * rnd_loss
+                rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
+                total_loss = regression_loss + BETA * rnd_loss
 
-            total_loss.backward()
-            optimizer.step()
+                total_loss.backward()
+                optimizer.step()
 
-            total_train_loss += regression_loss.item() * data.num_graphs
+                total_train_loss += regression_loss.item() * data.num_graphs
+
+            except RuntimeError as e:
+                if "out of memory" in str(e):
+                    print("Произошла ошибка OOM. Пропуск текущего батча.")
+                    torch.cuda.empty_cache()
+                    continue
+                else:
+                    raise e
 
         avg_train_loss = total_train_loss / len(train_loader.dataset)
         train_losses.append(avg_train_loss)
@@ -151,15 +161,24 @@ try:
         total_val_loss = 0
         with torch.no_grad():
             for data in val_loader:
-                data = data.to(device)
-                output, embedding = model(data, return_embedding=True)
+                try:
+                    data = data.to(device)
+                    output, embedding = model(data, return_embedding=True)
 
-                regression_loss = criterion(output, data.y.unsqueeze(1))
-                _, prior_embedding = prior_network(data, return_embedding=True)
+                    regression_loss = criterion(output, data.y.unsqueeze(1))
+                    _, prior_embedding = prior_network(data, return_embedding=True)
 
-                rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
-                total_loss = regression_loss + BETA * rnd_loss
-                total_val_loss += total_loss.item() * data.num_graphs
+                    rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
+                    total_loss = regression_loss + BETA * rnd_loss
+                    total_val_loss += total_loss.item() * data.num_graphs
+
+                except RuntimeError as e:
+                    if "out of memory" in str(e):
+                        print("Произошла ошибка OOM во время валидации. Пропуск текущего батча.")
+                        torch.cuda.empty_cache()
+                        continue
+                    else:
+                        raise e
 
         avg_val_loss = total_val_loss / len(val_loader.dataset)
         val_losses.append(avg_val_loss)
@@ -192,6 +211,8 @@ finally:
 
 model.load_state_dict(torch.load(MODELS_PATH / "best_model.pth", weights_only=True))
 
+train_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # noqa: DTZ005
+(VISUALIZATION_PATH / train_time).mkdir(parents=True, exist_ok=True)
 
 try:
     model.eval()
@@ -224,7 +245,7 @@ try:
 
     def plot_and_save(fig, filename):
         fig.tight_layout()
-        fig.savefig(VISUALIZATION_PATH / filename)
+        fig.savefig(VISUALIZATION_PATH / train_time / filename)
         if USE_SEABORN:
             plt.show()
         plt.close(fig)
