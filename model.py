@@ -22,6 +22,23 @@ class FiLM(nn.Module):
         return gamma * x + beta
 
 
+class RND(nn.Module):
+    def __init__(self, in_features: int, conditioning_features: int):
+        super().__init__()
+        self.predictor = nn.Sequential(
+            nn.Linear(in_features, 128), nn.ReLU(), nn.Linear(128, in_features)
+        )
+        self.prior = nn.Sequential(
+            nn.Linear(conditioning_features, 128), nn.ReLU(), nn.Linear(128, in_features)
+        )
+
+    def forward(self, x: torch.Tensor, conditioning_input: torch.Tensor) -> torch.Tensor:
+        prior_output = self.prior(conditioning_input)
+        predictor_output = self.predictor(x)
+        bonus = torch.norm(predictor_output - prior_output, p=2, dim=-1)
+        return bonus, prior_output, predictor_output
+
+
 class RegDGCNN(nn.Module):
     def __init__(self, k: int = 10):
         super().__init__()
@@ -29,19 +46,19 @@ class RegDGCNN(nn.Module):
 
         self.conv1 = DynamicEdgeConv(self.mlp([2 * 3, 128, 128, 128]), self.k, aggr="max")
         self.film1 = FiLM(128, 128)
-        self.attn1 = GATConv(128, 32, heads=4, concat=True)  # 32 * 4 = 128
+        self.attn1 = GATConv(128, 32, heads=4, concat=True)
 
         self.conv2 = DynamicEdgeConv(self.mlp([2 * 128, 256, 256, 256]), self.k, aggr="max")
         self.film2 = FiLM(256, 256)
-        self.attn2 = GATConv(256, 64, heads=4, concat=True)  # 64 * 4 = 256
+        self.attn2 = GATConv(256, 64, heads=4, concat=True)
 
         self.conv3 = DynamicEdgeConv(self.mlp([2 * 256, 512, 512, 512]), self.k, aggr="max")
         self.film3 = FiLM(512, 512)
-        self.attn3 = GATConv(512, 128, heads=4, concat=True)  # 128 * 4 = 512
+        self.attn3 = GATConv(512, 128, heads=4, concat=True)
 
         self.conv4 = DynamicEdgeConv(self.mlp([2 * 512, 1024, 1024, 1024]), self.k, aggr="max")
         self.film4 = FiLM(1024, 1024)
-        self.attn4 = GATConv(1024, 256, heads=4, concat=True)  # 256 * 4 = 1024
+        self.attn4 = GATConv(1024, 256, heads=4, concat=True)
 
         self.pool_mean = global_mean_pool
         self.pool_max = global_max_pool
@@ -54,6 +71,8 @@ class RegDGCNN(nn.Module):
         self.bn2 = nn.BatchNorm1d(1024)
         self.dropout2 = nn.Dropout(p=0.3)
         self.lin3 = nn.Linear(1024, 1)
+
+        self.rnd = RND(in_features=1024, conditioning_features=1024)
 
     def mlp(self, channels: list[int]) -> nn.Sequential:
         layers = []
@@ -105,6 +124,8 @@ class RegDGCNN(nn.Module):
         x4_pool_mean = self.pool_mean(x4, batch)
         x4_pool_max = self.pool_max(x4, batch)
 
+        rnd_bonus, prior_output, predictor_output = self.rnd(x4, x4.view(x4.size(0), -1))
+
         embedding = torch.cat(
             [
                 x1_pool_mean,
@@ -126,6 +147,6 @@ class RegDGCNN(nn.Module):
         output = self.lin3(x)
 
         if return_embedding:
-            return output, embedding
+            return output, embedding, rnd_bonus
 
         return output

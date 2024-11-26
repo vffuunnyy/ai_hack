@@ -151,11 +151,11 @@ try:
                 data = data.to(device)
                 optimizer.zero_grad()
 
-                output, embedding = model(data, return_embedding=True)
-                regression_loss = criterion(output, torch.sigmoid(data.y.unsqueeze(1)))
+                output, embedding, _ = model(data, return_embedding=True)
+                regression_loss = criterion(output, data.y.unsqueeze(1))
 
                 with torch.no_grad():
-                    _, prior_embedding = prior_network(data, return_embedding=True)
+                    _, prior_embedding, _ = prior_network(data, return_embedding=True)
 
                 rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
                 total_loss = regression_loss + BETA * rnd_loss
@@ -184,10 +184,10 @@ try:
             for data in val_loader:
                 try:
                     data = data.to(device)
-                    output, embedding = model(data, return_embedding=True)
+                    output, embedding, _ = model(data, return_embedding=True)
 
                     regression_loss = criterion(output, data.y.unsqueeze(1))
-                    _, prior_embedding = prior_network(data, return_embedding=True)
+                    _, prior_embedding, _ = prior_network(data, return_embedding=True)
 
                     rnd_loss = nn.functional.mse_loss(embedding, prior_embedding)
                     total_loss = regression_loss + BETA * rnd_loss
