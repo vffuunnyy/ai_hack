@@ -146,6 +146,8 @@ class RegDGCNN(nn.Module):
         x = self.dropout2(x)
         output = self.lin3(x)
 
+        output = torch.sigmoid(output) * 1.5
+
         if return_embedding:
             return output, embedding, rnd_bonus
 
