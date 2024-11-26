@@ -9,6 +9,7 @@ dependencies:
   - pip
   - wheel
   - anaconda-anon-usage
+  - pybind11
   - pytorch
   - torchvision
   - numpy
